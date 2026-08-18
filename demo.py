@@ -3,18 +3,14 @@
 Run:  streamlit run demo.py
 """
 import os
-import sys
 
 import pandas as pd
 import streamlit as st
 from joblib import load as joblib_load
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
-from demo_theme import apply_black_theme  # noqa: E402
+from churn_theme import apply_theme
 
+HERE = os.path.dirname(os.path.abspath(__file__))
 ART = os.path.join(HERE, "artifacts")
 MODEL_PATH = os.path.join(ART, "churn_model.joblib")
 
@@ -37,7 +33,7 @@ def load_model():
 
 
 st.set_page_config(page_title="Customer Churn Prediction", layout="centered")
-apply_black_theme()
+apply_theme()
 st.title("Customer Churn Prediction")
 st.caption("Predicts whether a post-paid customer will churn within the next period.")
 

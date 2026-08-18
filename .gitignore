@@ -1,0 +1,13 @@
+# dataset
+data/*
+!data/.gitkeep
+
+# model artifacts
+artifacts/*.joblib
+!artifacts/churn_model.joblib
+artifacts/*.json
+artifacts/*.png
+
+__pycache__/
+*.pyc
+.venv/

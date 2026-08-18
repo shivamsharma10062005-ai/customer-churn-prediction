@@ -7,8 +7,6 @@ import streamlit as st
 
 _CSS = """
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap');
-
   :root {
     --bg1: #0f0c29;
     --bg2: #302b63;
@@ -28,7 +26,7 @@ _CSS = """
     background: linear-gradient(-45deg, #0f0c29, #302b63, #7c3aed, #0ea5e9, #ec4899, #0f0c29);
     background-size: 400% 400%;
     animation: aurora 18s ease infinite;
-    font-family: 'Inter', -apple-system, Segoe UI, sans-serif;
+    font-family: 'Segoe UI', -apple-system, sans-serif;
     color: var(--text);
   }
 
@@ -64,7 +62,7 @@ _CSS = """
   }
 
   h1, h2, h3, h4 {
-    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    font-family: 'Segoe UI', -apple-system, sans-serif;
     color: var(--text);
     letter-spacing: -0.01em;
   }
@@ -80,7 +78,7 @@ _CSS = """
   }
   [data-testid="stMetricValue"] {
     color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Segoe UI', -apple-system, sans-serif;
     font-size: 2rem;
   }
   [data-testid="stMetricDelta"] { color: var(--cyan); font-weight: 600; }

@@ -106,7 +106,10 @@ risk_help = {
     "high": "High churn risk — offer a retention incentive.",
     "critical": "Critical — prioritize a retention offer now.",
 }
-st.success(risk_help[risk]) if risk in ("low", "medium") else st.warning(risk_help[risk])
+if risk in ("low", "medium"):
+    st.success(risk_help[risk])
+else:
+    st.warning(risk_help[risk])
 
 with st.expander("Why this score (top risk factors)"):
     if factors:

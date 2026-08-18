@@ -32,8 +32,10 @@ def load_model():
     return joblib_load(MODEL_PATH)
 
 
-st.set_page_config(page_title="Customer Churn Prediction", layout="centered")
+st.set_page_config(page_title="Customer Churn Prediction", page_icon="🛰️", layout="centered")
 apply_theme()
+st.markdown('<div class="nx-eyebrow">● Telecom Retention · ML Interactive</div>',
+            unsafe_allow_html=True)
 st.title("Customer Churn Prediction")
 st.caption("Predicts whether a post-paid customer will churn within the next period.")
 
@@ -116,3 +118,9 @@ with st.expander("Model details"):
       (`artifacts/churn_model.joblib`) — preprocessor + classifier in one file
     - **Results:** see `artifacts/roc_pr_curves.png`, `artifacts/confusion_matrix.png`
     """)
+
+st.markdown(
+    '<div class="nx-footer"><b>NEXUS · CUSTOMER CHURN PREDICTION</b> — '
+    'scikit-learn pipeline · SMOTE · Streamlit</div>',
+    unsafe_allow_html=True,
+)

@@ -1,14 +1,17 @@
-numpy>=1.26
-pandas>=2.0
-scikit-learn>=1.3
-xgboost>=2.0
-imbalanced-learn>=0.11
-joblib>=1.3
+# Pinned to the exact environment the v2.0.0 model bundle was trained with
+# (Python 3.13.1). Versions must match for joblib pickles to unpickle cleanly.
+numpy==2.2.0
+scipy==1.14.1
+pandas==2.2.3
+scikit-learn==1.6.0
+xgboost==3.3.0
+imbalanced-learn==0.14.2
+joblib==1.4.2
 matplotlib>=3.7
-streamlit>=1.35
-fastapi>=0.110
-uvicorn>=0.29
-pydantic>=2.6
+streamlit==1.41.1
+fastapi==0.141.1
+uvicorn==0.52.1
+pydantic==2.13.4
 pydantic-settings>=2.2
-pytest>=8.0
-httpx>=0.27
+pytest==9.1.1
+httpx==0.28.1

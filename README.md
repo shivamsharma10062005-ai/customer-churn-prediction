@@ -112,9 +112,10 @@ python -m pytest tests -q
 
 ## Deploy
 
+- **Live demo (Streamlit Community Cloud)**: https://customer-churn-prediction.streamlit.app
 - **API**: `Dockerfile` + `render.yaml` (Render web service, health check at
   `/api/v1/health`).
-- **Demo**: `streamlit run demo.py` or deploy to Streamlit Community Cloud.
+- **Demo locally**: `streamlit run demo.py` (entry `app.py` used for cloud).
 
 ## Model versioning
 

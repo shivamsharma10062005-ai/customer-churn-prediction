@@ -16,6 +16,7 @@ artifacts/model/*
 !artifacts/model/*/
 artifacts/model/*/*
 !artifacts/model/*/model_card.json
+!artifacts/model/*/*.joblib
 
 __pycache__/
 *.pyc

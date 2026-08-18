@@ -1,36 +1,29 @@
 """Live demo: Customer Churn Prediction.
 
 Run:  streamlit run demo.py
+
+Uses the same production services as the API (feature contract, versioned
+model runtime, risk engine, explainer) so the demo and the backend can never
+drift apart. Gracefully shows an error if no model artifact is present.
 """
 import os
+import sys
 
-import pandas as pd
 import streamlit as st
-from joblib import load as joblib_load
-
-from churn_theme import apply_theme
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ART = os.path.join(HERE, "artifacts")
-MODEL_PATH = os.path.join(ART, "churn_model.joblib")
+sys.path.insert(0, HERE)
 
-CATEGORICAL = [
-    "gender", "Partner", "Dependents", "PhoneService", "MultipleLines",
-    "InternetService", "OnlineSecurity", "OnlineBackup", "DeviceProtection",
-    "TechSupport", "StreamingTV", "StreamingMovies", "Contract",
-    "PaperlessBilling", "PaymentMethod",
-]
-NUMERIC = ["SeniorCitizen", "tenure", "MonthlyCharges", "TotalCharges"]
+from churn_theme import apply_theme  # noqa: E402
+
+from app.explanations import explain  # noqa: E402
+from app.features import make_dataframe  # noqa: E402
+from app.model_runtime import ModelLoadError, runtime  # noqa: E402
+from app.risk import classify, expected_retention_value  # noqa: E402
 
 YES_NO = ["Yes", "No"]
 INTENT_NO = ["Yes", "No", "No internet service"]
 PHONE_NO = ["Yes", "No", "No phone service"]
-
-
-@st.cache_resource
-def load_model():
-    return joblib_load(MODEL_PATH)
-
 
 st.set_page_config(page_title="Customer Churn Prediction", page_icon="🛰️", layout="centered")
 apply_theme()
@@ -38,6 +31,19 @@ st.markdown('<div class="nx-eyebrow">● Telecom Retention · ML Interactive</di
             unsafe_allow_html=True)
 st.title("Customer Churn Prediction")
 st.caption("Predicts whether a post-paid customer will churn within the next period.")
+
+
+@st.cache_resource
+def get_bundle_info():
+    return runtime.info()
+
+
+try:
+    model_info = get_bundle_info()
+except ModelLoadError as exc:
+    st.error(f"Model artifact not found: {exc}")
+    st.stop()
+
 
 c1, c2 = st.columns(2)
 with c1:
@@ -63,9 +69,6 @@ with c2:
     streaming_tv = st.selectbox("Streaming TV", INTENT_NO, index=1)
     streaming_movies = st.selectbox("Streaming Movies", INTENT_NO, index=1)
 
-# demo assumes a sample customer with full tenure matched to total charges
-total = monthly * tenure
-
 row = {
     "gender": gender,
     "SeniorCitizen": int(senior),
@@ -85,42 +88,52 @@ row = {
     "PaperlessBilling": paperless,
     "PaymentMethod": payment,
     "MonthlyCharges": monthly,
-    "TotalCharges": round(total, 2),
+    "TotalCharges": round(monthly * tenure, 2),
 }
 
-prob = float(load_model().predict_proba(pd.DataFrame([row])[NUMERIC + CATEGORICAL])[0][1])
-risk = "High" if prob >= 0.5 else "Low"
+prob = runtime.predict(make_dataframe(row))
+bundle = runtime.bundle
+risk = classify(prob, bundle)
+erv = expected_retention_value(prob)
+factors = explain(bundle, row, top_n=5)
+
 st.metric("Churn probability", f"{prob:.1%}",
-          delta=fr"{risk} risk  ·  {contract} contract", delta_color="inverse")
+          delta=f"{risk} risk  ·  {contract} contract", delta_color="inverse")
 
-if prob >= 0.5:
-    st.warning("High churn risk — recommend a retention offer (e.g. loyalty discount "
-               "or contract renewal incentive) before this customer leaves.")
-else:
-    st.success("Low churn risk — customer is likely to stay.")
+risk_help = {
+    "low": "Customer is likely to stay. No intervention needed.",
+    "medium": "At-risk — a light touch (e.g. a check-in) can help.",
+    "high": "High churn risk — offer a retention incentive.",
+    "critical": "Critical — prioritize a retention offer now.",
+}
+st.success(risk_help[risk]) if risk in ("low", "medium") else st.warning(risk_help[risk])
 
-with st.expander("What drives this score"):
-    st.write(f"""
-    - **Contract:** {contract} ({'higher churn driver — month-to-month renews at will' if contract == 'Month-to-month' else 'stable contract, lower churn'})
-    - **Tenure:** {tenure} months (longer tenure = more loyalty)
-    - **Payment method:** {payment} (electronic check is historically the churniest)
-    - **Internet:** {internet} {'— fiber users churn more' if internet == 'Fiber optic' else ''}
-    - **Add-ons:** {'OnlineSecurity/TechSupport reduce churn' if online_security == 'Yes' or tech_support == 'Yes' else 'no add-ons — engagement risk'}
-    """)
+with st.expander("Why this score (top risk factors)"):
+    if factors:
+        for factor in factors:
+            direction = "raises churn risk" if factor["direction"] == "positive" else "lowers churn risk"
+            st.markdown(f"- **{factor['feature']}** — {factor['impact']} impact, "
+                        f"{direction} (contribution {factor['contribution']:+.2f})")
+    else:
+        st.write("No explanation available for this model version.")
 
 with st.expander("Model details"):
-    st.write("""
-    - **Algorithms compared:** Logistic Regression, Random Forest, XGBoost
-    - **Imbalance handling:** SMOTE applied on the train set only (never the test set)
-    - **Metrics:** ROC-AUC (correctly scores ranking quality on imbalanced data),
-      precision/recall/F1 at 0.5 threshold + confusion matrix
-    - **Deployment:** model saved as a single sklearn pipeline
-      (`artifacts/churn_model.joblib`) — preprocessor + classifier in one file
-    - **Results:** see `artifacts/roc_pr_curves.png`, `artifacts/confusion_matrix.png`
+    metrics = model_info.get("metrics", {})
+    st.write(f"""
+    - **Model:** `{model_info.get('model_version')}` · **Features:** `{model_info.get('feature_version')}`
+    - **Algorithm:** {model_info.get('algorithm')} (chosen by validation PR-AUC)
+    - **Calibrated probabilities:** isotonic calibration on held-out validation —
+      Brier {metrics.get('brier')}, ECE {metrics.get('ece')}
+    - **Deployed threshold:** {metrics.get('threshold')} (cost-optimized)
+    - **Test metrics:** ROC-AUC {metrics.get('roc_auc')}, PR-AUC {metrics.get('pr_auc')},
+      recall {metrics.get('recall')}, top-decile recall {metrics.get('top_decile_recall')}
+    - **Risk bands:** low < {model_info.get('risk_thresholds', {}).get('low')} ·
+      medium < {model_info.get('risk_thresholds', {}).get('medium')} ·
+      high < {model_info.get('risk_thresholds', {}).get('high')} · critical above
     """)
 
 st.markdown(
     '<div class="nx-footer"><b>NEXUS · CUSTOMER CHURN PREDICTION</b> — '
-    'scikit-learn pipeline · SMOTE · Streamlit</div>',
+    'versioned pipeline · calibrated probabilities · Streamlit</div>',
     unsafe_allow_html=True,
 )

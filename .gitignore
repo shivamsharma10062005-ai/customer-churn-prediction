@@ -2,12 +2,22 @@
 data/*
 !data/.gitkeep
 
+# prediction store (runtime data, never commit)
+data/store/
+
 # model artifacts
 artifacts/*.joblib
 !artifacts/churn_model.joblib
 artifacts/*.json
 artifacts/*.png
+artifacts/batch_scores.csv
+artifacts/model/*
+!artifacts/model/latest.json
+!artifacts/model/*/
+artifacts/model/*/*
+!artifacts/model/*/model_card.json
 
 __pycache__/
 *.pyc
 .venv/
+.env

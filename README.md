@@ -1,4 +1,4 @@
-# Project 4 — Customer Churn Prediction
+# Project — Customer Churn Prediction
 
 Predicts whether a post-paid telecom customer will churn. Mirrors the retention
 problem every telecom/e-commerce/insurance company solves with ML.
